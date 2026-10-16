@@ -65,13 +65,13 @@ function Detail() {
   const src = safeUrl(o.official_source_url);
   const app = safeUrl(o.official_application_url);
 
-  const track = async () => {
-    if (!user) return toast("Sign in to track applications");
+  const track = async (): Promise<void> => {
+    if (!user) { toast("Sign in to track applications"); return; }
     if (!saved.has(o.id)) await toggle(o.id);
     const { error } = await supabase.from("applications").upsert({ user_id: user.id, opportunity_id: o.id }, { onConflict: "user_id,opportunity_id", ignoreDuplicates: true });
     if (o.required_documents?.length)
       await supabase.from("document_checklist").upsert(o.required_documents.map((d) => ({ user_id: user.id, opportunity_id: o.id, document_name: d.slice(0, 200) })), { onConflict: "user_id,opportunity_id,document_name", ignoreDuplicates: true });
-    if (error) return toast.error("Couldn't start tracking");
+    if (error) { toast.error("Couldn't start tracking"); return; }
     qc.invalidateQueries({ queryKey: ["tracker"] });
     toast.success("Added to your application tracker");
   };
@@ -84,12 +84,12 @@ function Detail() {
     else toast.error(r.error);
   };
 
-  const sendReport = async () => {
-    if (!user) return toast("Sign in to report an issue");
+  const sendReport = async (): Promise<void> => {
+    if (!user) { toast("Sign in to report an issue"); return; }
     const msg = report.trim();
     if (msg.length < 3) return;
     const { error } = await supabase.from("issue_reports").insert({ user_id: user.id, opportunity_id: o.id, message: msg.slice(0, 1000) });
-    if (error) return toast.error("Couldn't send report");
+    if (error) { toast.error("Couldn't send report"); return; }
     setReport("");
     toast.success("Thanks — an admin will review this.");
   };

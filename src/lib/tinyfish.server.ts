@@ -33,7 +33,7 @@ async function withRetry(fn: () => Promise<Response>, attempts = 3): Promise<Res
 
 export type SearchResult = { position: number; site_name?: string; title: string; snippet?: string; url: string };
 
-export async function tinyfishSearch(query: string, opts: { location?: string; purpose?: string } = {}) {
+export async function tinyfishSearch(query: string, opts: { location?: string | undefined; purpose?: string } = {}) {
   const params = new URLSearchParams({ query });
   if (opts.location) params.set("location", opts.location);
   if (opts.purpose) params.set("purpose", opts.purpose.slice(0, 2000));
