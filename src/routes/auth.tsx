@@ -46,7 +46,7 @@ function AuthPage() {
     e.preventDefault();
     setErr(null);
     const em = emailSchema.safeParse(email);
-    if (!em.success) return setErr(em.error.issues[0].message);
+    if (!em.success) return setErr(em.error.issues[0]?.message ?? "Invalid email");
     setBusy(true);
     try {
       if (mode === "forgot") {
@@ -56,7 +56,7 @@ function AuthPage() {
         return;
       }
       const pw = pwSchema.safeParse(password);
-      if (!pw.success) return setErr(pw.error.issues[0].message);
+      if (!pw.success) return setErr(pw.error.issues[0]?.message ?? "Invalid password");
       if (mode === "signup") {
         const { data, error } = await supabase.auth.signUp({ email: em.data, password: pw.data, options: { emailRedirectTo: `${window.location.origin}/onboarding`, data: { full_name: name.trim().slice(0, 100) } } });
         if (error) throw error;

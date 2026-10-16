@@ -15,7 +15,7 @@ export function VerificationBadge({ status }: { status: string }) {
     rejected: ["bg-danger-soft text-destructive", XCircle],
     expired: ["bg-muted text-muted-foreground", Clock],
   };
-  const [cls, Icon] = map[status] ?? map.pending;
+  const [cls, Icon] = (map[status] ?? map["pending"])!;
   return (
     <span className={cn(pill, cls)}>
       <Icon className="h-3.5 w-3.5" />
