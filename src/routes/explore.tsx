@@ -13,6 +13,7 @@ import { CATEGORIES, daysUntil } from "@/lib/opportunity";
 import { checkEligibility, relevanceScore } from "@/lib/eligibility";
 import { useAuth } from "@/lib/auth";
 import { useSaved } from "@/lib/useSaved";
+import { startDiscovery } from "@/lib/discovery.functions";
 
 const searchSchema = z.object({
   q: z.string().optional(),
@@ -46,6 +47,8 @@ function Explore() {
   const [benefits, setBenefits] = useState("any");
   const [sort, setSort] = useState(profile ? "relevance" : "deadline");
   const [limit, setLimit] = useState(PAGE);
+  const [discovering, setDiscovering] = useState(false);
+  const [discoveryMessage, setDiscoveryMessage] = useState("");
   const category = search.category ?? "all";
 
   const query = useQuery({
@@ -87,6 +90,59 @@ function Explore() {
     setQ(""); setLocation(""); setDeadline("any"); setElig("any"); setBenefits("any");
     navigate({ search: {} });
   };
+  const runLiveDiscovery = async () => {
+  const searchTerm = q.trim();
+
+  if (searchTerm.length < 3) {
+    setDiscoveryMessage("Enter at least 3 characters to search.");
+    return;
+  }
+
+  setDiscovering(true);
+  setDiscoveryMessage("Searching for real opportunities...");
+
+  try {
+    const allowedCategories = [
+      "scholarship",
+      "grant",
+      "internship",
+      "hackathon",
+      "competition",
+      "other",
+    ] as const;
+
+    const discoveryCategory =
+      allowedCategories.find((item) => item === category) ?? "any";
+
+    const result = await startDiscovery({
+      data: {
+        jobId: crypto.randomUUID(),
+        query: searchTerm,
+        category: discoveryCategory,
+        region: location.trim() || "India",
+        useProfile: Boolean(profile),
+      },
+    });
+
+    if (!result.ok) {
+      setDiscoveryMessage(
+        "error" in result ? result.error : "Discovery failed.",
+      );
+      return;
+    }
+
+    setDiscoveryMessage(
+      `Discovery finished. ${result.count} opportunity records processed. New records may need admin review.`,
+    );
+
+    await query.refetch();
+  } catch (error) {
+    console.error("Live discovery failed:", error);
+    setDiscoveryMessage("Discovery failed. Please try again.");
+  } finally {
+    setDiscovering(false);
+  }
+};
 
   return (
     <PublicPage>
@@ -141,6 +197,20 @@ function Explore() {
             <Button variant="ghost" onClick={reset}><RotateCcw />Reset</Button>
           </div>
         </div>
+        <div className="mt-4 flex flex-wrap items-center gap-3">
+  <Button
+    onClick={runLiveDiscovery}
+    disabled={discovering}
+  >
+    {discovering ? "Discovering..." : "Discover Live Opportunities"}
+  </Button>
+
+  {discoveryMessage && (
+    <p className="w-full text-sm text-muted-foreground" role="status">
+      {discoveryMessage}
+    </p>
+  )}
+</div>
         {query.isError && <p className="mt-8 rounded-lg bg-danger-soft p-4 text-sm text-destructive">Couldn't load opportunities. <button className="underline" onClick={() => query.refetch()}>Retry</button></p>}
         <div className="mt-6 grid gap-5 md:grid-cols-2 lg:grid-cols-3">
           {query.isLoading && Array.from({ length: 6 }).map((_, i) => <CardSkeleton key={i} />)}
